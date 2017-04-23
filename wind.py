@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from gpiozero import DigitalInputDevice
 from time import sleep
 import time
@@ -24,7 +25,11 @@ def calculate_speed(time_sec):
     km_per_sec = dist_km / time_sec
     km_per_hour = km_per_sec * SECS_IN_AN_HOUR
     with open('/var/www/html/wind.json', 'w') as outfile:
-        json.dump({"sample_time":time.time(), "speed":km_per_hour * ADJUSTMENT}, outfile)
+        json.dump({
+            "sample_time":time.time(), 
+            "mps":km_per_sec / 1000 * ADJUSTMENT,
+            "speed":km_per_hour * ADJUSTMENT
+        }, outfile)
 
     return km_per_hour * ADJUSTMENT
 

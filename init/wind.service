@@ -1,0 +1,15 @@
+[Unit]
+Description=Wind speed measure
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=/etc/default/wind
+ExecStart=/home/ricky/weather/wind.py
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
