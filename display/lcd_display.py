@@ -3,25 +3,32 @@
 import os
 import time
 import requests
+import json
+import datetime
+import time
+import socket
 import dothat.backlight as backlight
 import dothat.lcd as lcd
 from dothat import touch
 
-hue = 60
 lum = 60
 
-SOIL_ID="0316453f4eff"
-AIR_ID="041643cebdff"
+SOIL_ID=os.getenv("SOIL_ID")
+AIR_ID=os.getenv("AIR_ID")
 
-LIGHT_SERVER="192.168.0.13:8004"
-WEATHER_SERVER="192.168.0.33"
+LAT=float(os.getenv("LAT","0"))
+LON=float(os.getenv("LON","0"))
 
-DARKSKY="https://api.darksky.net/forecast/f72d3f49ab3c9b3a1fd618a437dd0442/50.842,-1.1375?exclude=hourly,minutely,daily&units=si"
+LIGHT_SERVER=os.getenv("LIGHT_SERVER")
+GRAPHITE_SERVER=os.getenv("GRAPHITE_SERVER", None)
+WEATHER_SERVER=os.getenv("WEATHER_SERVER")
+AIO_KEY = os.getenv("AIO_KEY", None)
+WU_STATION_ID = os.getenv("WU_STATION_ID", None)
+WU_STATION_KEY = os.getenv("WU_STATION_KEY", None)
+
 
 wu_upload = True
-wu_station_id = os.getenv("WU_STATION_ID", None)
-wu_station_key = os.getenv("WU_STATION_KEY", None)
-if wu_station_id == None:
+if WU_STATION_ID == None:
     wu_upload = False
 wu_url = "http://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
 
@@ -41,8 +48,8 @@ def publish(air, soil, wind):
     # build a weather data object
     weather_data = {
         "action": "updateraw",
-        "ID": wu_station_id,
-        "PASSWORD": wu_station_key,
+        "ID": WU_STATION_ID,
+        "PASSWORD": WU_STATION_KEY,
         "dateutc": "now",
         "tempf": str(tempf_air),
         "soiltempf": str(tempf_soil),
@@ -51,6 +58,40 @@ def publish(air, soil, wind):
     response = requests.get(wu_url, params=weather_data)
     print("Server response:", response.text)
 
+def publish_graphite(air, soil, wind):
+    try:
+        sock = socket.socket()
+        sock.connect( (GRAPHITE_SERVER, 2003) )
+        sock.send("weather.soil-temp %f %d \n" % (soil, time.time()))
+        sock.send("weather.air-temp %f %d \n" % (air, time.time()))
+        sock.send("weather.wind-speed %f %d \n" % (wind, time.time()))
+        sock.close()
+    except socket.error:
+        print "Failed to send data to graphite" 
+
+def publish_AIO(air, soil, wind):
+    publish_AIO_metric('soil-temperature', soil)
+    publish_AIO_metric('air-temperature', air)
+    publish_AIO_metric('wind-speed', wind)
+
+def publish_AIO_metric(feed, value):
+    weather = {
+        "value":value,
+        "lat":LAT,
+        "lon":LON,
+        "created_at":datetime.datetime.utcnow().isoformat().split('.')[0]
+    }
+    
+    r = requests.post(
+        "https://io.adafruit.com/api/v2/rickymoorhouse/feeds/weather.%s/data" % feed,
+        data=json.dumps(weather),
+        headers={
+            "X-AIO-Key":AIO_KEY,
+            "Content-Type":"application/json"
+        }
+    )
+    if 200 != r.status_code:
+        print r.text
 
 
 @touch.on(touch.DOWN)
@@ -66,20 +107,20 @@ def light_up(ch, evt):
 
 @touch.on(touch.LEFT)
 def light_left(ch, evt):
-    global hue
-    hue = hue - 20
-    if hue < 0:
-        hue = 360
-    obj = requests.get('http://%s/hue/%d' % (LIGHT_SERVER, hue)).json()
+    global lum
+    lum = lum - 15
+    if lum < 0:
+        lum = 0
+    obj = requests.get('http://%s/lum/%d' % (LIGHT_SERVER, lum)).json()
     backlight.rgb(int(obj['red']), int(obj['green']), int(obj['blue']))
 
 @touch.on(touch.RIGHT)
 def light_right(ch, evt):
-    global hue
-    hue = hue + 20
-    if hue > 360:
-        hue = 0
-    obj = requests.get('http://%s/hue/%d' % (LIGHT_SERVER, hue)).json()
+    global lum
+    lum = lum + 15
+    if lum > 100:
+        lum = 100
+    obj = requests.get('http://%s/lum/%d' % (LIGHT_SERVER, lum)).json()
     backlight.rgb(int(obj['red']), int(obj['green']), int(obj['blue']))
 
 def compare_char(new, old):
@@ -104,6 +145,7 @@ while True:
     lcd.set_cursor_position(15, 0)
     lcd.write("*")
     try:
+        print "http://%s/temperature.json" % WEATHER_SERVER
         r = requests.get("http://%s/temperature.json" % WEATHER_SERVER)
         s = r.json()[SOIL_ID]
         a = r.json()[AIR_ID]
@@ -113,9 +155,9 @@ while True:
 #wind:  12.
 
         lcd.set_cursor_position(0, 0)
-        lcd.write(" air:{:5.1f}".format(a)+chr(223)+"C "+compare_char(a,memory['air'])+"   ")
+        lcd.write(" air:{:5.1f}".format(a)+chr(223)+"C "+compare_char(a,memory['air'])+" ")
         lcd.set_cursor_position(0, 1)
-        lcd.write("soil:{:5.1f}".format(s)+chr(223)+"C "+compare_char(s,memory['soil'])+"   ")
+        lcd.write("soil:{:5.1f}".format(s)+chr(223)+"C "+compare_char(s,memory['soil'])+" ")
         memory['air'] = a
         memory['soil'] = s
 
@@ -128,7 +170,7 @@ while True:
         r = requests.get("http://%s/wind.json" % WEATHER_SERVER)
         w = r.json()['speed']
         lcd.set_cursor_position(0, 2)
-        lcd.write("wind:{:5.1f}".format(w)+"k/h "+compare_char(w,memory['wind'])+"   ")
+        lcd.write("wind:{:5.1f}".format(w)+"k/h "+compare_char(w,memory['wind'])+" ")
         memory['wind'] = w
         lcd.set_cursor_position(15, 2)
         lcd.write(" ")
@@ -137,4 +179,6 @@ while True:
         lcd.write("!")
     if wu_upload:
         publish(memory['air'], memory['soil'], memory['wind'])
+    if None != GRAPHITE_SERVER:
+        publish_graphite(memory['air'], memory['soil'], memory['wind'])
     time.sleep(20)
