@@ -150,14 +150,15 @@ while True:
         s = r.json()[SOIL_ID]
         a = r.json()[AIR_ID]
 #012345678012345678
+#a:11.0 * s:12.5 *
 # air:  11.0
 #soil:  11.0
 #wind:  12.
 
         lcd.set_cursor_position(0, 0)
-        lcd.write(" air:{:5.1f}".format(a)+chr(223)+"C "+compare_char(a,memory['air'])+" ")
-        lcd.set_cursor_position(0, 1)
-        lcd.write("soil:{:5.1f}".format(s)+chr(223)+"C "+compare_char(s,memory['soil'])+" ")
+        lcd.write("a{}{:4.1f}".format(compare_char(a, memory['air']), a)+chr(223))
+        #lcd.set_cursor_position(0, 1)
+        lcd.write(" s{}{:4.1f}".format(compare_char(s, memory['soil']), s)+chr(223))
         memory['air'] = a
         memory['soil'] = s
 
@@ -169,7 +170,7 @@ while True:
     try:
         r = requests.get("http://%s/wind.json" % WEATHER_SERVER)
         w = r.json()['speed']
-        lcd.set_cursor_position(0, 2)
+        lcd.set_cursor_position(0, 1)
         lcd.write("wind:{:5.1f}".format(w)+"k/h "+compare_char(w,memory['wind'])+" ")
         memory['wind'] = w
         lcd.set_cursor_position(15, 2)
