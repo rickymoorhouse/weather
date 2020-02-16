@@ -17,6 +17,11 @@ CM_IN_A_KM = 100000.0
 SECS_IN_AN_HOUR = 3600
 
 logger = logging.getLogger("wind-speed")
+level = getattr(logging, os.getenv("LOG_LEVEL","INFO").upper(), 20)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setLevel(level)
 
 # Load environment variables
 gpio_pin = int(os.getenv("WIND_PIN","22"))
