@@ -83,8 +83,8 @@ try:
         count = 0
         sleep(interval)
         km_per_hour = calculate_speed(interval)
-        print(km_per_hour)
-        print(temperatures)
+        logger.info("Wind speed is {} km/h. {} temperature readings".format(km_per_hour, len(temperatures['sensors'])))
+        logger.debug(temperatures)
         if graphite_host:
             try:
                 sock = socket.socket()
