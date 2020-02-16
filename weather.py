@@ -93,7 +93,8 @@ try:
                 logger.debug("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time()))
                 for sensor in temperatures['sensors']:
                     if temperatures['sensors'][sensor]>-55 and temperatures['sensors'][sensor] < 125:
-                        sock.send("%s.%s %f %d \n" % (graphite_prefix, sensor, temperatures['sensors'][sensor], time.time()))
+                        sock.send(("%s.%s %f %d \n" % (graphite_prefix, sensor, temperatures['sensors'][sensor], time.time())).encode())
+                        logger.debug("%s.%s %f %d \n" % (graphite_prefix, sensor, km_per_hour, time.time()))                        
                     else:
                         logger.info("outside of range (-55 - 125): {}".format(temperatures['sensors'][sensor]))
                 sock.close()
