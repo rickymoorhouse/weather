@@ -16,9 +16,7 @@ ADJUSTMENT = 1.18   # Adjustment for weight of cups
 CM_IN_A_KM = 100000.0
 SECS_IN_AN_HOUR = 3600
 
-DEBUG = False
-
-logger = logger.getLogger("wind-speed")
+logger = logging.getLogger("wind-speed")
 
 # Load environment variables
 gpio_pin = int(os.getenv("WIND_PIN","22"))
