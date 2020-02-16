@@ -58,7 +58,7 @@ while True:
         try:
             sock = socket.socket()
             sock.connect( (graphite_host, 2003) )
-            sock.send("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time()))
+            sock.send(("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time())).encode())
             logger.debug("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time()))
             sock.close()
         except socket.error:
