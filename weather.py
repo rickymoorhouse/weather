@@ -22,7 +22,7 @@ logger = logging.getLogger("weather")
 level = getattr(logging, os.getenv("LOG_LEVEL","INFO").upper(), 20)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
 
-os.system('bash -c "w1-gpio w1-therm"')
+os.system('bash -c "modprobe w1-gpio w1-therm"')
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(level)
