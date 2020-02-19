@@ -9,7 +9,11 @@ import socket
 import math
 import json
 import os
-
+try:
+    from smbus2 import SMBus
+except ImportError:
+    from smbus import SMBus
+from bme280 import BME280
 
 count = 0
 radius_cm = 9.0     # Radius of the anemometer
@@ -22,7 +26,6 @@ logger = logging.getLogger("weather")
 level = getattr(logging, os.getenv("LOG_LEVEL","INFO").upper(), 20)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
 
-os.system('bash -c "modprobe w1-gpio w1-therm"')
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(level)
@@ -35,6 +38,8 @@ output_file = os.getenv("OUTPUT_FILE_WIND", "/tmp/wind.json")
 output_file = os.getenv("OUTPUT_FILE_TEMP", "/tmp/temp.json")
 graphite_host = os.getenv("GRAPHITE_HOST", None)
 graphite_prefix = os.getenv("GRAPHITE_PREFIX", "weather")
+
+
 
 def calculate_speed(time_sec):
     global count
@@ -73,11 +78,23 @@ def spin():
     count = count + 1
     logger.debug(count)
 
+
+# Initialise the BME280
+use_bme280 = False
+try:
+    bus = SMBus(1)
+    bme280 = BME280(i2c_dev=bus)
+    use_bme280 = True
+except IOError:
+    logger.warning("BME280 not found, de-activating")
+
+# Set up count function on pulse for anenometer
 wind_speed_sensor = DigitalInputDevice(gpio_pin)
 wind_speed_sensor.when_activated = spin
 
 temperature = threading.Thread(target=read_temperature)
 temperature.start()
+
 
 
 try:
@@ -93,6 +110,14 @@ try:
                 sock.connect( (graphite_host, 2003) )
                 sock.send(("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time())).encode())
                 logger.debug("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time()))
+                if use_bme280:
+                    temperature = bme280.get_temperature()
+                    pressure = bme280.get_pressure()
+                    humidity = bme280.get_humidity()
+                    logger.info("BME280 reports temperature: {}, humidity: {}, pressure: {}".format(temperature, humidity, pressure))
+                    sock.send(("%s.indoor-temp %f %d \n" % (graphite_prefix, temperature, time.time())).encode())
+                    sock.send(("%s.pressure %f %d \n" % (graphite_prefix, pressure, time.time())).encode())
+                    sock.send(("%s.humidity %f %d \n" % (graphite_prefix, humidity, time.time())).encode())
                 for sensor in temperatures['sensors']:
                     if temperatures['sensors'][sensor]>-55 and temperatures['sensors'][sensor] < 125:
                         sock.send(("%s.%s %f %d \n" % (graphite_prefix, sensor, temperatures['sensors'][sensor], time.time())).encode())
