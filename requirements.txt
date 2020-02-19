@@ -2,4 +2,5 @@ w1thermsensor
 RPi.GPIO
 pigpio
 gpiozero
+smbus2
 pimoroni-bme280
