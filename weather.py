@@ -81,12 +81,13 @@ def spin():
 
 # Initialise the BME280
 use_bme280 = False
-try:
-    bus = SMBus(1)
-    bme280 = BME280(i2c_dev=bus)
-    use_bme280 = True
-except IOError:
-    logger.warning("BME280 not found, de-activating")
+if use_bme280:
+    try:
+        bus = SMBus(1)
+        bme280 = BME280(i2c_dev=bus)
+        use_bme280 = True
+    except IOError:
+        logger.warning("BME280 not found, de-activating")
 
 # Set up count function on pulse for anenometer
 wind_speed_sensor = DigitalInputDevice(gpio_pin)
