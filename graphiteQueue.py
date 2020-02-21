@@ -15,7 +15,8 @@ class graphite():
         self.logger = logging.getLogger(__name__)
 
     def stage(self, name, value):
-        message = '{}.{} {} {}'.format(self.prefix, name, value, int(time.time()))
+        t = int(time.time())
+        message = '{}.{} {} {}'.format(self.prefix, name, value, t)
         self.cache.append(message)
         self.logger.debug("storing {}".format(message))
 
@@ -25,7 +26,7 @@ class graphite():
             sock.connect((self.server, self.port))
             self.logger.info("Sending {} records to graphite [{}:{}]".format(len(self.cache), self.server, self.port))
             self.logger.debug("\n".join(self.cache))
-            sock.sendall("\n".join(self.cache).encode())        
+            sock.sendall(("\n".join(self.cache)+"\n").encode())
             sock.close()
             # Clear out cache
             self.cache[:] = []
