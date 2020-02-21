@@ -9,6 +9,8 @@ import socket
 import math
 import json
 import os
+import graphiteQueue
+
 try:
     from smbus2 import SMBus
 except ImportError:
@@ -36,13 +38,13 @@ temperatures = {"sensors":{}, "sample_time":0}
 gpio_pin = int(os.getenv("WIND_PIN","22"))
 output_file = os.getenv("OUTPUT_FILE_WIND", "/tmp/wind.json")
 output_file = os.getenv("OUTPUT_FILE_TEMP", "/tmp/temp.json")
-graphite_host = os.getenv("GRAPHITE_HOST", None)
 graphite_prefix = os.getenv("GRAPHITE_PREFIX", "weather")
-
+use_bme280 = os.getenv('USE_BME280', 'false').lower() == "true"
 
 
 def calculate_speed(time_sec):
     global count
+    global graphite
     circumference_cm = (2 * math.pi) * radius_cm
     rotations = count / 2.0
 
@@ -60,12 +62,17 @@ def calculate_speed(time_sec):
     return km_per_hour * ADJUSTMENT
 
 def read_temperature():
-    global temperatures
+    global graphite
     try:
         while True:
             temperatures["sample_time"] = time.time()
             for sensor in W1ThermSensor.get_available_sensors():
+                temperature = sensor.get_temperature()
                 logger.debug("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
+                if temperature-55 and temperature < 125:
+                    graphite.stage(sensor.id, temperature)
+                else:
+                    logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
                 temperatures['sensors'][sensor.id] = sensor.get_temperature()
             with open(output_file, 'w') as outfile:
                 json.dump(temperatures, outfile)
@@ -80,7 +87,6 @@ def spin():
 
 
 # Initialise the BME280
-use_bme280 = False
 if use_bme280:
     try:
         bus = SMBus(1)
@@ -88,6 +94,8 @@ if use_bme280:
         use_bme280 = True
     except IOError:
         logger.warning("BME280 not found, de-activating")
+
+graphite = graphiteQueue.graphite(prefix=graphite_prefix)
 
 # Set up count function on pulse for anenometer
 wind_speed_sensor = DigitalInputDevice(gpio_pin)
@@ -105,29 +113,16 @@ try:
         km_per_hour = calculate_speed(interval)
         logger.info("Wind speed is {} km/h. {} temperature readings".format(km_per_hour, len(temperatures['sensors'])))
         logger.debug(temperatures)
-        if graphite_host:
-            try:
-                sock = socket.socket()
-                sock.connect( (graphite_host, 2003) )
-                sock.send(("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time())).encode())
-                logger.debug("%s.wind-speed %f %d \n" % (graphite_prefix, km_per_hour, time.time()))
-                if use_bme280:
-                    temperature = bme280.get_temperature()
-                    pressure = bme280.get_pressure()
-                    humidity = bme280.get_humidity()
-                    logger.info("BME280 reports temperature: {}, humidity: {}, pressure: {}".format(temperature, humidity, pressure))
-                    sock.send(("%s.indoor-temp %f %d \n" % (graphite_prefix, temperature, time.time())).encode())
-                    sock.send(("%s.pressure %f %d \n" % (graphite_prefix, pressure, time.time())).encode())
-                    sock.send(("%s.humidity %f %d \n" % (graphite_prefix, humidity, time.time())).encode())
-                for sensor in temperatures['sensors']:
-                    if temperatures['sensors'][sensor]>-55 and temperatures['sensors'][sensor] < 125:
-                        sock.send(("%s.%s %f %d \n" % (graphite_prefix, sensor, temperatures['sensors'][sensor], time.time())).encode())
-                        logger.debug("%s.%s %f %d \n" % (graphite_prefix, sensor, km_per_hour, time.time()))                        
-                    else:
-                        logger.info("outside of range (-55 - 125): {}".format(temperatures['sensors'][sensor]))
-                sock.close()
-            except socket.error:
-                logger.error("Failed to send data to graphite")
+        graphite.stage('wind-speed', km_per_hour)
+        if use_bme280:
+            temperature = bme280.get_temperature()
+            pressure = bme280.get_pressure()
+            humidity = bme280.get_humidity()
+            logger.info("BME280 reports temperature: {}, humidity: {}, pressure: {}".format(temperature, humidity, pressure))
+            graphite.stage('indoor-temp', temperature)
+            graphite.stage('pressure', pressure)
+            graphite.stage('humidity', humidity)
+        graphite.store()
 except KeyboardInterrupt:
     temperature.join()
     exit()
