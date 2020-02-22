@@ -63,6 +63,12 @@ def calculate_speed(time_sec):
 
 def read_temperature():
     global graphite
+    mapping = {}
+    mapping_json = os.getenv('SENSOR_NAMES', None)
+    if mapping_json:
+        logger.debug('Loading sensor name map from SENSOR_NAMES')
+        mapping = json.loads(mapping_json)
+        logger.debug(mapping)
     try:
         while True:
             temperatures["sample_time"] = time.time()
@@ -71,6 +77,8 @@ def read_temperature():
                 logger.debug("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
                 if temperature-55 and temperature < 125:
                     graphite.stage(sensor.id, temperature)
+                    if sensor.id in mapping:
+                        graphite.stage(mapping[sensor.id], temperature)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
                 temperatures['sensors'][sensor.id] = sensor.get_temperature()
