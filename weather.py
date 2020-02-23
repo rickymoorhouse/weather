@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from gpiozero import DigitalInputDevice
+import gpiozero
 from w1thermsensor import W1ThermSensor
 import threading
 from time import sleep
@@ -122,6 +123,8 @@ try:
         logger.info("Wind speed is {} km/h. {} temperature readings".format(km_per_hour, len(temperatures['sensors'])))
         logger.debug(temperatures)
         graphite.stage('wind-speed', km_per_hour)
+        graphite.stage('pi.cpu-temp', gpiozero.CPUTemperature().temperature)
+        graphite.stage('pi.load-average-5m', gpiozero.LoadAverage().load_average)
         if use_bme280:
             temperature = bme280.get_temperature()
             pressure = bme280.get_pressure()
