@@ -5,6 +5,7 @@ from w1thermsensor import W1ThermSensor
 import threading
 from time import sleep
 import logging
+from logging.handlers import SysLogHandler
 import time
 import socket
 import math
@@ -25,13 +26,30 @@ ADJUSTMENT = 1.18   # Adjustment for weight of cups
 CM_IN_A_KM = 100000.0
 SECS_IN_AN_HOUR = 3600
 
+class ContextFilter(logging.Filter):
+    hostname = socket.gethostname()
+
+    def filter(self, record):
+        record.hostname = ContextFilter.hostname
+        return True
+
 logger = logging.getLogger("weather")
 level = getattr(logging, os.getenv("LOG_LEVEL","INFO").upper(), 20)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
 
-
 consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(level)
+syslog_target = os.getenv('SYSLOG_TARGET', None)
+
+if syslog_target:
+    (syslog_host, syslog_port) = syslog_target.split(':')
+    syslog = SysLogHandler(address=(syslog_host, int(syslog_port)))
+    syslog.addFilter(ContextFilter())
+    format = '%(asctime)s %(hostname)s weather: %(message)s'
+    formatter = logging.Formatter(format, datefmt='%b %d %H:%M:%S')
+    syslog.setFormatter(formatter)
+    logger.addHandler(syslog)
+    logger.info('Set up logging')
 
 temperatures = {"sensors":{}, "sample_time":0}
 
