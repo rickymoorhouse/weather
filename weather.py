@@ -81,10 +81,8 @@ def calculate_speed(time_sec, output_file=None):
 
 def read_temperature():
     global graphite
-    output_file = None
     try:
         while True:
-            temperatures["sample_time"] = time.time()
             for sensor in W1ThermSensor.get_available_sensors():
                 temperature = sensor.get_temperature()
                 logger.debug("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
@@ -92,9 +90,6 @@ def read_temperature():
                     graphite.stage(sensor.id, temperature)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
-            if output_file:
-                with open(output_file, 'w') as outfile:
-                    json.dump(temperatures, outfile)
     except KeyboardInterrupt:
         thread.exit()
 
