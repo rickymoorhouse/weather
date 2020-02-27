@@ -51,7 +51,6 @@ if syslog_target:
     logger.addHandler(syslog)
     logger.info('Set up logging')
 
-temperatures = {"sensors":{}, "sample_time":0}
 
 # Load environment variables
 gpio_pin = int(os.getenv("WIND_PIN","22"))
@@ -61,33 +60,28 @@ graphite_prefix = os.getenv("GRAPHITE_PREFIX", "weather")
 use_bme280 = os.getenv('USE_BME280', 'false').lower() == "true"
 
 
-def calculate_speed(time_sec):
+def calculate_speed(time_sec, output_file=None):
     global count
-    global graphite
     circumference_cm = (2 * math.pi) * radius_cm
     rotations = count / 2.0
-
+    logger.debug("Calculating speed based on {} rotations of {} circumference".format(rotations, circumference_cm))
     dist_km = (circumference_cm * rotations) / CM_IN_A_KM
 
     km_per_sec = dist_km / time_sec
     km_per_hour = km_per_sec * SECS_IN_AN_HOUR
-    with open(output_file, 'w') as outfile:
-        json.dump({
-            "sample_time":time.time(), 
-            "mps":km_per_sec * 1000 * ADJUSTMENT,
-            "speed":km_per_hour * ADJUSTMENT
-        }, outfile)
+    if output_file:
+        with open(output_file, 'w') as outfile:
+            json.dump({
+                "sample_time":time.time(), 
+                "mps":km_per_sec * 1000 * ADJUSTMENT,
+                "speed":km_per_hour * ADJUSTMENT
+            }, outfile)
 
     return km_per_hour * ADJUSTMENT
 
 def read_temperature():
     global graphite
-    mapping = {}
-    mapping_json = os.getenv('SENSOR_NAMES', None)
-    if mapping_json:
-        logger.debug('Loading sensor name map from SENSOR_NAMES')
-        mapping = json.loads(mapping_json)
-        logger.debug(mapping)
+    output_file = None
     try:
         while True:
             temperatures["sample_time"] = time.time()
@@ -96,13 +90,11 @@ def read_temperature():
                 logger.debug("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
                 if temperature-55 and temperature < 125:
                     graphite.stage(sensor.id, temperature)
-                    if sensor.id in mapping:
-                        graphite.stage(mapping[sensor.id], temperature)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
-                temperatures['sensors'][sensor.id] = sensor.get_temperature()
-            with open(output_file, 'w') as outfile:
-                json.dump(temperatures, outfile)
+            if output_file:
+                with open(output_file, 'w') as outfile:
+                    json.dump(temperatures, outfile)
     except KeyboardInterrupt:
         thread.exit()
 
@@ -138,8 +130,7 @@ try:
         count = 0
         sleep(interval)
         km_per_hour = calculate_speed(interval)
-        logger.info("Wind speed is {} km/h. {} temperature readings".format(km_per_hour, len(temperatures['sensors'])))
-        logger.debug(temperatures)
+        logger.info("Wind speed is {} km/h.".format(km_per_hour))
         graphite.stage('wind-speed', km_per_hour)
         graphite.stage('pi.cpu-temp', gpiozero.CPUTemperature().temperature)
         graphite.stage('pi.load-average-5m', gpiozero.LoadAverage().load_average)
