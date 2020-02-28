@@ -54,8 +54,6 @@ if syslog_target:
 
 # Load environment variables
 gpio_pin = int(os.getenv("WIND_PIN","22"))
-output_file = os.getenv("OUTPUT_FILE_WIND", "/tmp/wind.json")
-output_file = os.getenv("OUTPUT_FILE_TEMP", "/tmp/temp.json")
 graphite_prefix = os.getenv("GRAPHITE_PREFIX", "weather")
 use_bme280 = os.getenv('USE_BME280', 'false').lower() == "true"
 
