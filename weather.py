@@ -27,7 +27,7 @@ CM_IN_A_KM = 100000.0
 SECS_IN_AN_HOUR = 3600
 
 class ContextFilter(logging.Filter):
-    hostname = socket.gethostname()
+    hostname = os.getenv('BALENA_DEVICE_NAME_AT_INIT',socket.gethostname())
 
     def filter(self, record):
         record.hostname = ContextFilter.hostname
