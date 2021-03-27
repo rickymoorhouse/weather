@@ -126,6 +126,7 @@ try:
         logger.info("Wind speed is {} km/h.".format(km_per_hour))
         graphite.stage('wind-speed', km_per_hour)
         graphite.stage('pi.cpu-temp', gpiozero.CPUTemperature().temperature)
+        graphite.stage('pi.disk-usage', gpiozero.DiskUsage().usage)
         graphite.stage('pi.load-average-5m', gpiozero.LoadAverage().load_average)
         if use_bme280:
             temperature = bme280.get_temperature()
