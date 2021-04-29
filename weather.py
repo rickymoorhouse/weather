@@ -136,6 +136,7 @@ try:
             graphite.stage('indoor-temp', temperature)
             graphite.stage('pressure', pressure)
             graphite.stage('humidity', humidity)
+        graphite.debug()
         metric_count = graphite.store()
         if metric_count < previous_metric_count:
             exit()

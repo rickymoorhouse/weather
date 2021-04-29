@@ -14,11 +14,15 @@ class graphite():
         self.prefix = prefix
         self.logger = logging.getLogger(__name__)
 
-    def stage(self, name, value):
-        t = int(time.time())
-        message = '{}.{} {} {}'.format(self.prefix, name, value, t)
+    def stage(self, name, value, timestamp=None):
+        if None == timestamp:
+            timestamp = int(time.time())
+        message = '{}.{} {} {}'.format(self.prefix, name, value, timestamp)
         self.cache.append(message)
         self.logger.debug("storing {}".format(message))
+
+    def debug(self):
+        print(self.cache)
 
     def store(self):
         try:
@@ -28,8 +32,10 @@ class graphite():
             self.logger.debug("\n".join(self.cache))
             sock.sendall(("\n".join(self.cache)+"\n").encode())
             sock.close()
+            sent = len(self.cache)
             # Clear out cache
             self.cache[:] = []
+            return sent
         except socket.error as se:
             self.logger.exception(se)
 
