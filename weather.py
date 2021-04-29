@@ -117,7 +117,7 @@ temperature = threading.Thread(target=read_temperature)
 temperature.start()
 
 
-
+previous_metric_count = 0
 try:
     while True:
         count = 0
@@ -136,7 +136,10 @@ try:
             graphite.stage('indoor-temp', temperature)
             graphite.stage('pressure', pressure)
             graphite.stage('humidity', humidity)
-        graphite.store()
+        metric_count = graphite.store()
+        if metric_count < previous_metric_count:
+            exit()
+        previous_metric_count = metric_count
 except KeyboardInterrupt:
     temperature.join()
     exit()
