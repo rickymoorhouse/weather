@@ -81,13 +81,16 @@ def read_temperature():
     global graphite
     try:
         while True:
+            summary = ""
             for sensor in W1ThermSensor.get_available_sensors():
                 temperature = sensor.get_temperature()
                 logger.debug("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
                 if temperature-55 and temperature < 125:
                     graphite.stage(sensor.id, temperature)
+                    summary += " {}: {} ".format(sensor.id, temperature)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
+            logger.info("W1: " + summary)
     except KeyboardInterrupt:
         thread.exit()
 
