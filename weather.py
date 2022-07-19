@@ -90,7 +90,8 @@ def read_temperature():
                     summary += " {}: {} ".format(sensor.id, temperature)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
-            logger.info("W1: " + summary)
+            if summary != "":
+                logger.info("W1: " + summary)
     except KeyboardInterrupt:
         thread.exit()
 
