@@ -21,7 +21,7 @@ from bme280 import BME280
 
 count = 0
 radius_cm = 9.0     # Radius of the anemometer
-interval = 5        # How often to report speed
+interval = 30        # How often to report speed
 ADJUSTMENT = 1.18   # Adjustment for weight of cups
 CM_IN_A_KM = 100000.0
 SECS_IN_AN_HOUR = 3600

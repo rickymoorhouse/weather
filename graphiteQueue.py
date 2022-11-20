@@ -30,7 +30,7 @@ class graphite():
                 'metric': "{}.{}".format(self.prefix, name),
                 'value': float(value),
                 'time': int(timestamp),
-                'interval': 10,
+                'interval': 30,
                 'mtype': 'count',
                 'tags': [],
             }
