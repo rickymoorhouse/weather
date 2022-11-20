@@ -1,4 +1,5 @@
 w1thermsensor
+requests
 RPi.GPIO
 pigpio
 gpiozero
