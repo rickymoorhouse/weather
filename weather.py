@@ -12,8 +12,7 @@ import math
 import json
 import os
 import graphiteQueue
-from prometheus_client import start_http_server, Gauge, Counter, make_wsgi_app
-
+import prometheus_client 
 prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
@@ -124,11 +123,11 @@ if use_bme280:
 
 
 graphite = graphiteQueue.graphite(prefix=graphite_prefix)
-start_http_server(80)
-wind_speed_gauge = Gauge('wind_speed', 'Speed of wind')
-temperature_gauge = Gauge('temperature', 'Temperature', ['sensor'])
-humidity_gauge = Gauge('humidity', 'Humidity')
-pressure_gauge = Gauge('pressure', 'Pressure')
+prometheus_client.start_http_server(80)
+wind_speed_gauge = prometheus_client.Gauge('wind_speed', 'Speed of wind')
+temperature_gauge = prometheus_client.Gauge('temperature', 'Temperature', ['sensor'])
+humidity_gauge = prometheus_client.Gauge('humidity', 'Humidity')
+pressure_gauge = prometheus_client.Gauge('pressure', 'Pressure')
 
 # Set up count function on pulse for anenometer
 wind_speed_sensor = DigitalInputDevice(gpio_pin)
