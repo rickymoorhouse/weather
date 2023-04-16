@@ -38,7 +38,7 @@ class graphite():
         self.logger.debug("storing {}".format(message))
 
     def debug(self):
-        print(self.cache)
+        self.logger.debug(print(self.cache))
 
     def store(self):
         try:
@@ -47,12 +47,14 @@ class graphite():
             result = requests.post(self.url, json=self.cache, headers=self.headers)
             if result.status_code != 200:
                 raise Exception(result.text)
-            self.logger.debug('%s: %s' % (result.status_code, result.text))            
+            self.logger.info('%s: %s' % (result.status_code, result.text))            
             sent = len(self.cache)
             # Clear out cache
             self.cache[:] = []
+            self.cache[:] = []
             return sent
         except Exception as se:
+            self.logger.info("Failed to send %d",len(self.cache))
             self.logger.exception(se)
             return -1
 
