@@ -118,7 +118,7 @@ if use_bme280:
 
 
 graphite = graphiteQueue.graphite(prefix=graphite_prefix)
-start_http_server(8080)
+start_http_server(80)
 wind_speed_gauge = Gauge('wind_speed', 'Speed of wind')
 
 # Set up count function on pulse for anenometer
