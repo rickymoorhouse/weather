@@ -84,6 +84,7 @@ def calculate_speed(time_sec, output_file=None):
 
 def read_temperature():
     global graphite
+    global temperature_gauge
     try:
         while True:
             summary = ""
@@ -91,6 +92,7 @@ def read_temperature():
                 temperature = sensor.get_temperature()
                 logger.debug("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
                 if temperature-55 and temperature < 125:
+                    temperature_gauge.labels(sensor=sensor.id).set(temperature)
                     graphite.stage(sensor.id, temperature)
                     summary += " {}: {} ".format(sensor.id, temperature)
                 else:
@@ -120,6 +122,9 @@ if use_bme280:
 graphite = graphiteQueue.graphite(prefix=graphite_prefix)
 start_http_server(80)
 wind_speed_gauge = Gauge('wind_speed', 'Speed of wind')
+temperature_gauge = Gauge('temperature', 'Temperature', ['sensor'])
+humidity_gauge = Gauge('humidity', 'Humidity')
+pressure_gauge = Gauge('pressure', 'Pressure')
 
 # Set up count function on pulse for anenometer
 wind_speed_sensor = DigitalInputDevice(gpio_pin)
@@ -140,12 +145,18 @@ try:
         wind_speed_gauge.set(km_per_hour)
         graphite.stage('pi.cpu-temp', gpiozero.CPUTemperature().temperature)
         graphite.stage('pi.disk-usage', gpiozero.DiskUsage().usage)
-        graphite.stage('pi.load-average-5m', gpiozero.LoadAverage().load_average)
+        graphite.stage('pi.load-average-5m', 
+                       gpiozero.LoadAverage().load_average)
         if use_bme280:
             temperature = bme280.get_temperature()
             pressure = bme280.get_pressure()
             humidity = bme280.get_humidity()
             logger.info("BME280 reports temperature: {}, humidity: {}, pressure: {}".format(temperature, humidity, pressure))
+            # Set Prometheus gauges
+            temperature_gauge.labels(sensor='bme280').set(temperature)
+            pressure_gauge.set(pressure)
+            humidity_gauge.set(humidity)
+            # Send to graphite
             graphite.stage('indoor-temp', temperature)
             graphite.stage('pressure', pressure)
             graphite.stage('humidity', humidity)
