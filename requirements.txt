@@ -5,3 +5,4 @@ pigpio
 gpiozero
 smbus2
 pimoroni-bme280
+prometheus_client
