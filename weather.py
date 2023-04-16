@@ -12,6 +12,7 @@ import math
 import json
 import os
 import graphiteQueue
+from prometheus_client import start_http_server, Gauge, Counter, make_wsgi_app
 
 try:
     from smbus2 import SMBus
@@ -34,6 +35,7 @@ class ContextFilter(logging.Filter):
     def filter(self, record):
         record.hostname = ContextFilter.hostname
         return True
+
 
 logger = logging.getLogger("weather")
 level = getattr(logging, os.getenv("LOG_LEVEL","INFO").upper(), 20)
@@ -79,6 +81,7 @@ def calculate_speed(time_sec, output_file=None):
 
     return km_per_hour * ADJUSTMENT
 
+
 def read_temperature():
     global graphite
     try:
@@ -113,7 +116,10 @@ if use_bme280:
     except IOError:
         logger.warning("BME280 not found, de-activating")
 
+
 graphite = graphiteQueue.graphite(prefix=graphite_prefix)
+start_http_server(8080)
+wind_speed_gauge = Gauge('wind_speed', 'Speed of wind')
 
 # Set up count function on pulse for anenometer
 wind_speed_sensor = DigitalInputDevice(gpio_pin)
@@ -131,6 +137,7 @@ try:
         km_per_hour = calculate_speed(interval)
         logger.info("Wind speed is {} km/h.".format(km_per_hour))
         graphite.stage('wind-speed', km_per_hour)
+        wind_speed_gauge.set(km_per_hour)
         graphite.stage('pi.cpu-temp', gpiozero.CPUTemperature().temperature)
         graphite.stage('pi.disk-usage', gpiozero.DiskUsage().usage)
         graphite.stage('pi.load-average-5m', gpiozero.LoadAverage().load_average)
@@ -144,6 +151,7 @@ try:
             graphite.stage('humidity', humidity)
         graphite.debug()
         metric_count = graphite.store()
+        logger.info("Metrics stored: %d",metric_count)
         if metric_count < previous_metric_count:
             exit()
         previous_metric_count = metric_count
