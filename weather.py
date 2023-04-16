@@ -12,6 +12,7 @@ import math
 import json
 import os
 import graphiteQueue
+import adafruit
 import prometheus_client 
 prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
@@ -88,6 +89,7 @@ def calculate_speed(time_sec, output_file=None):
 def read_temperature():
     global graphite
     global temperature_gauge
+    global a
     try:
         while True:
             summary = ""
@@ -98,6 +100,7 @@ def read_temperature():
                     temperature_gauge.labels(sensor=sensor.id).set(temperature)
                     graphite.stage(sensor.id, temperature)
                     summary += " {}: {} ".format(sensor.id, temperature)
+                    a.store('weather.air-temperature', temperature)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
             if summary != "":
@@ -123,6 +126,7 @@ if use_bme280:
 
 
 graphite = graphiteQueue.graphite(prefix=graphite_prefix)
+a = adafruit.adafruitIO()
 prometheus_client.start_http_server(80)
 wind_speed_gauge = prometheus_client.Gauge('wind_speed', 'Speed of wind')
 temperature_gauge = prometheus_client.Gauge('temperature', 'Temperature', ['sensor'])
@@ -145,6 +149,7 @@ try:
         km_per_hour = calculate_speed(interval)
         logger.info("Wind speed is {} km/h.".format(km_per_hour))
         graphite.stage('wind-speed', km_per_hour)
+        a.store('weather.wind-speed', km_per_hour)
         wind_speed_gauge.set(km_per_hour)
         graphite.stage('pi.cpu-temp', gpiozero.CPUTemperature().temperature)
         graphite.stage('pi.disk-usage', gpiozero.DiskUsage().usage)
