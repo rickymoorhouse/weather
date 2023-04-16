@@ -47,13 +47,14 @@ class graphite():
             result = requests.post(self.url, json=self.cache, headers=self.headers)
             if result.status_code != 200:
                 raise Exception(result.text)
-            print('%s: %s' % (result.status_code, result.text))            
+            self.logger.debug('%s: %s' % (result.status_code, result.text))            
             sent = len(self.cache)
             # Clear out cache
             self.cache[:] = []
             return sent
         except Exception as se:
             self.logger.exception(se)
+            return -1
 
     def __del__(self):
         logging.info("Storing remaining data ({} records)".format(len(self.cache)))
