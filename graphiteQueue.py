@@ -54,6 +54,8 @@ class graphite():
                 self.cache[:] = []
                 self.cache[:] = []
                 return sent
+            else:
+                return 0
         except Exception as se:
             self.logger.info("Failed to send %d",len(self.cache))
             self.logger.exception(se)
