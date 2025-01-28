@@ -85,6 +85,17 @@ def calculate_speed(time_sec, output_file=None):
     return km_per_hour * ADJUSTMENT
 
 
+def write_to_file(output_file, temperature, humidity, pressure):
+    """ write bme280 output to file """
+    if output_file:
+        with open(output_file, 'w', encoding='utf-8') as outfile:
+            json.dump({
+                "sample_time": time.time(),
+                "temperature": temperature,
+                "humidity": humidity,
+                "pressure": pressure,
+            }, outfile)    
+
 def read_temperature():
     global graphite
     global temperature_gauge
@@ -145,14 +156,14 @@ try:
     while True:
         count = 0
         sleep(interval)
-        km_per_hour = calculate_speed(interval)
+        km_per_hour = calculate_speed(interval, '/data/wind.json')
         logger.info("Wind speed is {} km/h.".format(km_per_hour))
         graphite.stage('wind-speed', km_per_hour)
         a.store('weather.wind-speed', km_per_hour)
         wind_speed_gauge.set(km_per_hour)
         graphite.stage('pi.cpu-temp', gpiozero.CPUTemperature().temperature)
         graphite.stage('pi.disk-usage', gpiozero.DiskUsage().usage)
-        graphite.stage('pi.load-average-5m', 
+        graphite.stage('pi.load-average-5m',
                        gpiozero.LoadAverage().load_average)
         if use_bme280:
             temperature = bme280.get_temperature()
@@ -167,6 +178,7 @@ try:
             graphite.stage('indoor-temp', temperature)
             graphite.stage('pressure', pressure)
             graphite.stage('humidity', humidity)
+            write_to_file("/data/bme280.json", temperature, humidity, pressure)
         graphite.debug()
         metric_count = graphite.store()
         logger.info("Metrics stored: %d",metric_count)
