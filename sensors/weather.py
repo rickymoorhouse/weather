@@ -1,7 +1,4 @@
 #!/usr/bin/python
-from gpiozero import DigitalInputDevice
-import gpiozero
-from w1thermsensor import W1ThermSensor
 import threading
 from time import sleep
 import logging
@@ -14,6 +11,10 @@ import os
 import graphiteQueue
 import adafruit
 import prometheus_client 
+from gpiozero import DigitalInputDevice
+import gpiozero
+from w1thermsensor import W1ThermSensor
+from bme280 import BME280
 prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
@@ -22,19 +23,17 @@ try:
     from smbus2 import SMBus
 except ImportError:
     from smbus import SMBus
-from bme280 import BME280
 
 count = 0
-radius_cm = 9.0     # Radius of the anemometer
-interval = int(os.getenv("INTERVAL","30"))       # How often to report speed
+RADIUS_CM = 9.0     # Radius of the anemometer
+interval = int(os.getenv("INTERVAL", "30"))       # How often to report speed
 ADJUSTMENT = 1.18   # Adjustment for weight of cups
 CM_IN_A_KM = 100000.0
 SECS_IN_AN_HOUR = 3600
 
 
-
 class ContextFilter(logging.Filter):
-    hostname = os.getenv('BALENA_DEVICE_NAME_AT_INIT',socket.gethostname())
+    hostname = os.getenv('BALENA_DEVICE_NAME_AT_INIT', socket.gethostname())
 
     def filter(self, record):
         record.hostname = ContextFilter.hostname
@@ -53,8 +52,8 @@ if syslog_target:
     (syslog_host, syslog_port) = syslog_target.split(':')
     syslog = SysLogHandler(address=(syslog_host, int(syslog_port)))
     syslog.addFilter(ContextFilter())
-    format = '%(asctime)s %(hostname)s weather: %(message)s'
-    formatter = logging.Formatter(format, datefmt='%b %d %H:%M:%S')
+    log_format = '%(asctime)s %(hostname)s weather: %(message)s'
+    formatter = logging.Formatter(log_format, datefmt='%b %d %H:%M:%S')
     syslog.setFormatter(formatter)
     logger.addHandler(syslog)
     logger.info('Set up logging')
@@ -68,7 +67,7 @@ use_bme280 = os.getenv('USE_BME280', 'false').lower() == "true"
 
 def calculate_speed(time_sec, output_file=None):
     global count
-    circumference_cm = (2 * math.pi) * radius_cm
+    circumference_cm = (2 * math.pi) * RADIUS_CM
     rotations = count / 2.0
     logger.debug("Calculating speed based on {} rotations of {} circumference".format(rotations, circumference_cm))
     dist_km = (circumference_cm * rotations) / CM_IN_A_KM
@@ -76,11 +75,11 @@ def calculate_speed(time_sec, output_file=None):
     km_per_sec = dist_km / time_sec
     km_per_hour = km_per_sec * SECS_IN_AN_HOUR
     if output_file:
-        with open(output_file, 'w') as outfile:
+        with open(output_file, 'w', encoding='utf-8') as outfile:
             json.dump({
-                "sample_time":time.time(), 
-                "mps":km_per_sec * 1000 * ADJUSTMENT,
-                "speed":km_per_hour * ADJUSTMENT
+                "sample_time": time.time(),
+                "mps": km_per_sec * 1000 * ADJUSTMENT,
+                "speed": km_per_hour * ADJUSTMENT
             }, outfile)
 
     return km_per_hour * ADJUSTMENT
