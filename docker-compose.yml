@@ -2,7 +2,7 @@ version: '2'
 volumes:
   data: {}
 services:
-  proxy:
+  webserver:
     build: ./webserver
     depends_on:
       - data
