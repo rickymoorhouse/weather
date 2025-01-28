@@ -12,6 +12,7 @@ services:
     - data:/usr/share/nginx/html/:r
   data:
     build: ./sensors
+    privileged: true
     expose:
       - "8080"
     devices:
