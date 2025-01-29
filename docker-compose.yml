@@ -1,6 +1,6 @@
 version: '2'
 volumes:
-  data: {}
+  output: {}
 services:
   webserver:
     build: ./webserver
@@ -9,7 +9,7 @@ services:
     ports:
       - "80:80"
     volumes:
-    - data:/usr/share/nginx/html/:r
+    - output:/usr/share/nginx/html/:r
   data:
     build: ./sensors
     privileged: true
@@ -18,4 +18,4 @@ services:
     devices:
       - "/dev/i2c-1:/dev/i2c-1"
     volumes:
-    - data:/data:rw
+    - output:/data:rw

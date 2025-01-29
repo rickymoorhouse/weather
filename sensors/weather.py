@@ -85,7 +85,17 @@ def calculate_speed(time_sec, output_file=None):
     return km_per_hour * ADJUSTMENT
 
 
-def write_to_file(output_file, temperature, humidity, pressure):
+def write_w1_output(temperature, id):
+    """ write w1 output to file """
+    with open("/data/w1_{}.json".format(id), 'w', encoding='utf-8') as outfile:
+        json.dump({
+            "sample_time": time.time(),
+            "temperature": temperature,
+            "id": id,
+        }, outfile)
+
+
+def write_bme280_output(output_file, temperature, humidity, pressure):
     """ write bme280 output to file """
     if output_file:
         with open(output_file, 'w', encoding='utf-8') as outfile:
@@ -94,7 +104,7 @@ def write_to_file(output_file, temperature, humidity, pressure):
                 "temperature": temperature,
                 "humidity": humidity,
                 "pressure": pressure,
-            }, outfile)    
+            }, outfile)
 
 def read_temperature():
     global graphite
@@ -111,6 +121,7 @@ def read_temperature():
                     graphite.stage(sensor.id, temperature)
                     summary += " {}: {} ".format(sensor.id, temperature)
                     a.store('weather.air-temperature', temperature)
+                    write_w1_output(temperature, sensor.id)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
             if summary != "":
@@ -147,8 +158,8 @@ pressure_gauge = prometheus_client.Gauge('pressure', 'Pressure')
 wind_speed_sensor = DigitalInputDevice(gpio_pin)
 wind_speed_sensor.when_activated = spin
 
-temperature = threading.Thread(target=read_temperature)
-temperature.start()
+t = threading.Thread(target=read_temperature)
+t.start()
 
 
 previous_metric_count = 0
@@ -178,7 +189,8 @@ try:
             graphite.stage('indoor-temp', temperature)
             graphite.stage('pressure', pressure)
             graphite.stage('humidity', humidity)
-            write_to_file("/data/bme280.json", temperature, humidity, pressure)
+            write_bme280_output("/data/bme280.json",
+                                temperature, humidity, pressure)
         graphite.debug()
         metric_count = graphite.store()
         logger.info("Metrics stored: %d",metric_count)
@@ -186,5 +198,5 @@ try:
             exit()
         previous_metric_count = metric_count
 except KeyboardInterrupt:
-    temperature.join()
+    t.join()
     exit()
