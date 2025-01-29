@@ -104,15 +104,13 @@ def display_temp(temperature):
         (r, g, b) = (255, 255, 0)
 
     try:
-        v *= ledshim.NUM_PIXELS
         for x in range(ledshim.NUM_PIXELS):
-            if v < 0:
+            if x > v:
                 r, g, b = 0, 0, 0
             else:
                 r, g, b = [int(min(v, 1.0) * c) for c in [r, g, b]]
 
             ledshim.set_pixel(x, r, g, b)
-            v -= 1
             ledshim.show()
     except Exception:
         print("Failed to display on ledshim")
