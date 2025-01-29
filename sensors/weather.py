@@ -19,6 +19,11 @@ prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
+import ledshim
+ledshim.set_clear_on_exit()
+
+
+
 try:
     from smbus2 import SMBus
 except ImportError:
@@ -85,6 +90,25 @@ def calculate_speed(time_sec, output_file=None):
     return km_per_hour * ADJUSTMENT
 
 
+def display_temp(temperature):
+    """ Attempt to indicate temperature on ledshim """
+    v = temperature / 30
+    (r, g, b) = (255, 255, 255)
+    try:
+        v *= ledshim.NUM_PIXELS
+        for x in range(ledshim.NUM_PIXELS):
+            if v < 0:
+                r, g, b = 0, 0, 0
+            else:
+                r, g, b = [int(min(v, 1.0) * c) for c in [r, g, b]]
+
+            ledshim.set_pixel(x, r, g, b)
+            v -= 1
+            ledshim.show()
+    except Exception:
+        print("Failed to display on ledshim")
+
+
 def write_w1_output(temperature, id):
     """ write w1 output to file """
     with open("/data/w1_{}.json".format(id), 'w', encoding='utf-8') as outfile:
@@ -115,13 +139,14 @@ def read_temperature():
             summary = ""
             for sensor in W1ThermSensor.get_available_sensors():
                 temperature = sensor.get_temperature()
-                logger.debug("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
+                logger.debug("Sensor %s has temperature %.2f" % (sensor.id, temperature))
                 if temperature-55 and temperature < 125:
                     temperature_gauge.labels(sensor=sensor.id).set(temperature)
                     graphite.stage(sensor.id, temperature)
                     summary += " {}: {} ".format(sensor.id, temperature)
                     a.store('weather.air-temperature', temperature)
                     write_w1_output(temperature, sensor.id)
+                    display_temp(temperature)
                 else:
                     logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
             if summary != "":
