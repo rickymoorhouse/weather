@@ -92,8 +92,17 @@ def calculate_speed(time_sec, output_file=None):
 
 def display_temp(temperature):
     """ Attempt to indicate temperature on ledshim """
-    v = temperature / 30
+    v = temperature % 10
     (r, g, b) = (255, 255, 255)
+    if temperature < 0:
+        (r, g, b) = (0, 0, 255)
+    elif temperature < 10:
+        (r, g, b) = (0, 255, 0)
+    elif temperature < 20:
+        (r, g, b) = (0, 255, 255)
+    elif temperature > 20:
+        (r, g, b) = (255, 255, 0)
+
     try:
         v *= ledshim.NUM_PIXELS
         for x in range(ledshim.NUM_PIXELS):
