@@ -22,6 +22,10 @@ prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 import ledshim
 ledshim.set_clear_on_exit()
 
+USE_LEDSHIM = False
+
+from machine import Pin, I2C
+import ssd1306
 
 
 try:
@@ -91,29 +95,37 @@ def calculate_speed(time_sec, output_file=None):
 
 
 def display_temp(temperature):
-    """ Attempt to indicate temperature on ledshim """
-    v = temperature % 10
-    (r, g, b) = (255, 255, 255)
-    if temperature < 0:
-        (r, g, b) = (0, 0, 255)
-    elif temperature < 10:
-        (r, g, b) = (0, 255, 0)
-    elif temperature < 20:
-        (r, g, b) = (0, 255, 255)
-    elif temperature > 20:
-        (r, g, b) = (255, 255, 0)
+    """ Display temperature """
 
-    try:
-        for x in range(ledshim.NUM_PIXELS):
-            if x > v:
-                r, g, b = 0, 0, 0
-            else:
-                r, g, b = [int(min(v, 1.0) * c) for c in [r, g, b]]
+    # using default address 0x3C
+    i2c = I2C(sda=Pin(4), scl=Pin(5))
+    display = ssd1306.SSD1306_I2C(128, 64, i2c)
+    display.text(print(f"{temperature:.2f} °C"), 0, 0, 1)
+    display.show()
+    # Attempt to indicate temperature on ledshim 
+    if USE_LEDSHIM:
+        v = temperature % 10
+        (r, g, b) = (255, 255, 255)
+        if temperature < 0:
+            (r, g, b) = (0, 0, 255)
+        elif temperature < 10:
+            (r, g, b) = (0, 255, 0)
+        elif temperature < 20:
+            (r, g, b) = (0, 255, 255)
+        elif temperature > 20:
+            (r, g, b) = (255, 255, 0)
 
-            ledshim.set_pixel(x, r, g, b)
-            ledshim.show()
-    except Exception:
-        print("Failed to display on ledshim")
+        try:
+            for x in range(ledshim.NUM_PIXELS):
+                if x > v:
+                    r, g, b = 0, 0, 0
+                else:
+                    r, g, b = [int(min(v, 1.0) * c) for c in [r, g, b]]
+
+                ledshim.set_pixel(x, r, g, b)
+                ledshim.show()
+        except Exception:
+            print("Failed to display on ledshim")
 
 
 def write_w1_output(temperature, id):
