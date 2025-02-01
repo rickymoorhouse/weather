@@ -1,4 +1,4 @@
-FROM arm32v6/nginx:latest
+FROM arm32v6/nginx:1-alpine
 
 # Remove default sites
 RUN rm -rf /usr/share/nginx/html/*

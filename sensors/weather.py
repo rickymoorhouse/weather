@@ -19,10 +19,15 @@ prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
+
 import ledshim
 ledshim.set_clear_on_exit()
 
 USE_LEDSHIM = False
+USE_SSD1306 = True
+
+if USE_SSD1306:
+    import display
 
 try:
     from smbus2 import SMBus
@@ -92,6 +97,8 @@ def calculate_speed(time_sec, output_file=None):
 
 def display_temp(temperature):
     """ Display temperature """
+    if USE_SSD1306:
+        display.update(temperature, 99)
     # Attempt to indicate temperature on ledshim 
     if USE_LEDSHIM:
         v = temperature % 10
