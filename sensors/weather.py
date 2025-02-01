@@ -24,10 +24,6 @@ ledshim.set_clear_on_exit()
 
 USE_LEDSHIM = False
 
-from machine import Pin, I2C
-import ssd1306
-
-
 try:
     from smbus2 import SMBus
 except ImportError:
@@ -96,12 +92,6 @@ def calculate_speed(time_sec, output_file=None):
 
 def display_temp(temperature):
     """ Display temperature """
-
-    # using default address 0x3C
-    i2c = I2C(sda=Pin(4), scl=Pin(5))
-    display = ssd1306.SSD1306_I2C(128, 64, i2c)
-    display.text(print(f"{temperature:.2f} °C"), 0, 0, 1)
-    display.show()
     # Attempt to indicate temperature on ledshim 
     if USE_LEDSHIM:
         v = temperature % 10
