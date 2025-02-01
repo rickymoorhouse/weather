@@ -17,8 +17,7 @@ COPY requirements.txt requirements.txt
 # pip install python deps from requirements.txt on the resin.io build server
 RUN pip install -r requirements.txt
 RUN pip install git+https://github.com/pimoroni/led-shim.git@main
-RUN pip install adafruit-circuitpython-displayio-ssd1306
-
+RUN pip install git+https://github.com/adafruit/Adafruit_CircuitPython_Display_Text.git@main
 # This will copy all files in our root to the working  directory in the container
 COPY . ./
 
