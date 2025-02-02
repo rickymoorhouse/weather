@@ -15,13 +15,14 @@ display_bus = I2CDisplayBus(i2c, device_address=0x3C)
 display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=64)
 
 # Load some proportional fonts
-fontFile = "helv.bdf"
+fontFile = "plex.bdf"
 fontToUse = bitmap_font.load_font(fontFile)
 
 def update(temp, wind_speed):
     update_temp(temp)
     time.sleep(3000)
     update_wind(wind_speed)
+    time.sleep(3000)
 
 def update_temp(temp):
     # Make the display context
