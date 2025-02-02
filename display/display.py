@@ -11,6 +11,10 @@ from adafruit_bitmap_font import bitmap_font
 import adafruit_displayio_ssd1306
 
 
+USE_LEDSHIM=False
+if USE_LEDSHIM:
+    import ledbar
+
 import logging
 from logging.handlers import SysLogHandler
 class ContextFilter(logging.Filter):
@@ -73,6 +77,8 @@ def update_wind(wind_speed):
     splash.append(text_area)
 
 while True:
+
+
     # Load data from json
     with open('/data/w1.json') as f:
         data = json.load(f)

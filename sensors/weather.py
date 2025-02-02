@@ -20,17 +20,6 @@ prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
 
-
-
-USE_LEDSHIM = False
-USE_SSD1306 = False
-
-if USE_SSD1306:
-    import display
-
-if USE_LEDSHIM:
-    import ledbar
-
 try:
     from smbus2 import SMBus
 except ImportError:
@@ -97,15 +86,6 @@ def calculate_speed(time_sec, output_file=None):
     return km_per_hour * ADJUSTMENT
 
 
-def display_temp(temperature):
-    """ Display temperature """
-    if USE_SSD1306:
-        display.update(temperature, 0)
-    # Attempt to indicate temperature on ledshim 
-    if USE_LEDSHIM:
-        ledbar.update(temperature)
-
-
 
 def write_w1_output(temperature_json):
     """ write w1 output to file """
@@ -151,7 +131,6 @@ def read_temperature():
                             temperature_json['max'] = temperature
                         if temperature > temperature_json['min']:
                             temperature_json['min'] = temperature
-                        display_temp(temperature)
                     else:
                         logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
                 except Exception as e:
@@ -162,7 +141,7 @@ def read_temperature():
                 logger.info("W1: " + summary)
             time.sleep(5)
     except KeyboardInterrupt:
-        thread.exit()
+        t.exit()
 
 
 def spin():
