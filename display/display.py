@@ -83,17 +83,22 @@ while True:
 
     # Load data from json
     with open('/data/w1.json') as f:
-        data = json.load(f)
-        print(data['max'])
-        temperature = data['max']
-        update_temp(temperature)
+        try:
+            data = json.load(f)
+            temperature = data['max']
+            update_temp(temperature)
+        except json.decoder.JSONDecodeError as e:
+            logger.exception(e)        
     time.sleep(3)
     logger.info("Slept for 3 seconds")
+
     with open('/data/wind.json') as f:
-        data = json.load(f)
-        print(data['speed'])
-        wind_speed = data['speed']
-        update_wind(wind_speed)
+        try:
+            data = json.load(f)
+            wind_speed = data['speed']
+            update_wind(wind_speed)
+        except json.decoder.JSONDecodeError as e:
+            logger.exception(e)
     time.sleep(3)
     logger.info("Slept for 3 seconds")
 
