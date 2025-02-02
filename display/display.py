@@ -53,13 +53,13 @@ def update_wind(wind_speed):
 
 while True:
     # Load data from json
-    with open('data/w1.json') as f:
+    with open('/data/w1.json') as f:
         data = json.load(f)
         print(data['max'])
         temperature = data['max']
         update_temp(temperature)
     time.sleep(3)
-    with open('data/wind.json') as f:
+    with open('/data/wind.json') as f:
         data = json.load(f)
         print(data['speed'])
         wind_speed = data['speed']

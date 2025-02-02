@@ -160,6 +160,7 @@ def read_temperature():
             write_w1_output(temperature_json)
             if summary != "":
                 logger.info("W1: " + summary)
+            time.sleep(5)
     except KeyboardInterrupt:
         thread.exit()
 
