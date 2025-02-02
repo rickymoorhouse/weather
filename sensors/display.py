@@ -1,8 +1,9 @@
 import board
+import time
 import displayio
 from i2cdisplaybus import I2CDisplayBus
 import terminalio
-from adafruit_display_text import label
+from adafruit_display_text import label,bitmap_label
 from adafruit_bitmap_font import bitmap_font
 
 import adafruit_displayio_ssd1306
@@ -17,20 +18,39 @@ display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=64)
 fontFile = "helv.bdf"
 fontToUse = bitmap_font.load_font(fontFile)
 
-def update(temp, humidity):
+def update(temp, wind_speed):
+    update_temp(temp)
+    time.sleep(3000)
+    update_wind(wind_speed)
+
+def update_temp(temp):
     # Make the display context
     splash = displayio.Group()
     display.root_group = splash
 
-    color_bitmap = displayio.Bitmap(128, 64, 1)
-    color_palette = displayio.Palette(1)
-    color_palette[0] = 0xFFFFFF  # White
-
     # Draw a label
-    text = "Temperature: {}".format(temp)
+
+    temp_str = f"{temp:.1f} C"
+    temp_label = bitmap_label.Label(fontToUse, color=0xFFFF00, text=temp_str)
+    temp_label.x = 10
+    temp_label.y = 40
+    splash.append(temp_label)
+    text = "Temperature"
     text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=5, y=5)
     splash.append(text_area)
 
-    text2 = "Humidity: {}%".format(humidity)
-    text2_area = label.Label(fontToUse, text=text, color=0xFFFF00, x=5, y=25)
-    splash.append(text2_area)
+def update_wind(wind_speed):
+    # Make the display context
+    splash = displayio.Group()
+    display.root_group = splash
+
+    # Draw a label
+
+    temp_str = f"{wind_speed:.1f} km/h"
+    temp_label = bitmap_label.Label(fontToUse, color=0xFFFF00, text=temp_str)
+    temp_label.x = 10
+    temp_label.y = 40
+    splash.append(temp_label)
+    text = "Wind Speed"
+    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=5, y=5)
+    splash.append(text_area)
