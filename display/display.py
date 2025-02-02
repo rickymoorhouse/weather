@@ -12,7 +12,9 @@ from adafruit_bitmap_font import bitmap_font
 import adafruit_displayio_ssd1306
 
 
-USE_LEDSHIM=False
+USE_LEDSHIM=os.getenv("USE_LEDSHIM", False)
+REMOTE_DATA=os.getenv("REMOTE_DATA", None)
+
 if USE_LEDSHIM:
     import ledbar
 
@@ -45,6 +47,7 @@ fontToUse = bitmap_font.load_font(fontFile)
 
 def update_temp(temp):
     # Make the display context
+    ledbar.update(temp)
     logger.info("Updating temperature display to %f", temp)
     splash = displayio.Group()
     display.root_group = splash
@@ -86,9 +89,10 @@ while True:
         try:
             data = json.load(f)
             temperature = data['max']
-            update_temp(temperature)
         except json.decoder.JSONDecodeError as e:
-            logger.exception(e)        
+            logger.exception(e) 
+            temperature = 85.0 
+        update_temp(temperature)
     time.sleep(3)
     logger.info("Slept for 3 seconds")
 
@@ -96,9 +100,10 @@ while True:
         try:
             data = json.load(f)
             wind_speed = data['speed']
-            update_wind(wind_speed)
         except json.decoder.JSONDecodeError as e:
             logger.exception(e)
+            wind_speed = 0.0
+        update_wind(wind_speed)
     time.sleep(3)
     logger.info("Slept for 3 seconds")
 
