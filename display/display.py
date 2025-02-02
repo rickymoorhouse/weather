@@ -1,5 +1,6 @@
 import json
 import os
+import socket
 import board
 import time
 import displayio
