@@ -100,7 +100,7 @@ def calculate_speed(time_sec, output_file=None):
 def display_temp(temperature):
     """ Display temperature """
     if USE_SSD1306:
-        display.update(temperature)
+        display.update(temperature, 0)
     # Attempt to indicate temperature on ledshim 
     if USE_LEDSHIM:
         ledbar.update(temperature)
