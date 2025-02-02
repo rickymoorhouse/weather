@@ -20,9 +20,9 @@ fontToUse = bitmap_font.load_font(fontFile)
 
 def update(temp, wind_speed):
     update_temp(temp)
-    time.sleep(3000)
+    time.sleep(3)
     update_wind(wind_speed)
-    time.sleep(3000)
+    time.sleep(3)
 
 def update_temp(temp):
     # Make the display context
