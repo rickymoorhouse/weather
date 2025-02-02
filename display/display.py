@@ -18,6 +18,7 @@ if USE_LEDSHIM:
 
 import logging
 from logging.handlers import SysLogHandler
+
 class ContextFilter(logging.Filter):
     hostname = os.getenv('BALENA_DEVICE_NAME_AT_INIT', socket.gethostname())
 
@@ -44,7 +45,7 @@ fontToUse = bitmap_font.load_font(fontFile)
 
 def update_temp(temp):
     # Make the display context
-    logger.info("Updating temperature display to {}", temp)
+    logger.info("Updating temperature display to %f", temp)
     splash = displayio.Group()
     display.root_group = splash
 
@@ -61,7 +62,7 @@ def update_temp(temp):
 
 def update_wind(wind_speed):
     # Make the display context
-    logger.info("Updating wind speed display to {}", wind_speed)
+    logger.info("Updating wind speed display to %f", wind_speed)
 
     splash = displayio.Group()
     display.root_group = splash
