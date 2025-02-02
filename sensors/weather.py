@@ -148,8 +148,8 @@ def read_temperature():
                         display_temp(temperature)
                     else:
                         logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
-                except W1ThermSensor.errors.ResetValueError:
-                    logger.warning("Sensor {} is reporting the reset value of 85")
+                except Exception as e:
+                    logger.warning(e)
             if summary != "":
                 logger.info("W1: " + summary)
     except KeyboardInterrupt:
