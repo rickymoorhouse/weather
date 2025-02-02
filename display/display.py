@@ -1,4 +1,5 @@
 import json
+import os
 import board
 import time
 import displayio
@@ -8,6 +9,23 @@ from adafruit_display_text import label,bitmap_label
 from adafruit_bitmap_font import bitmap_font
 
 import adafruit_displayio_ssd1306
+
+
+import logging
+from logging.handlers import SysLogHandler
+class ContextFilter(logging.Filter):
+    hostname = os.getenv('BALENA_DEVICE_NAME_AT_INIT', socket.gethostname())
+
+    def filter(self, record):
+        record.hostname = ContextFilter.hostname
+        return True
+
+
+logger = logging.getLogger("display")
+level = getattr(logging, os.getenv("LOG_LEVEL","INFO").upper(), 20)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
+
+
 
 displayio.release_displays()
 
@@ -21,6 +39,7 @@ fontToUse = bitmap_font.load_font(fontFile)
 
 def update_temp(temp):
     # Make the display context
+    logger.info("Updating temperature display to {}", temp)
     splash = displayio.Group()
     display.root_group = splash
 
@@ -37,6 +56,8 @@ def update_temp(temp):
 
 def update_wind(wind_speed):
     # Make the display context
+    logger.info("Updating wind speed display to {}", wind_speed)
+
     splash = displayio.Group()
     display.root_group = splash
 
@@ -59,11 +80,13 @@ while True:
         temperature = data['max']
         update_temp(temperature)
     time.sleep(3)
+    logger.info("Slept for 3 seconds")
     with open('/data/wind.json') as f:
         data = json.load(f)
         print(data['speed'])
         wind_speed = data['speed']
         update_wind(wind_speed)
     time.sleep(3)
+    logger.info("Slept for 3 seconds")
 
 
