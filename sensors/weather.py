@@ -20,14 +20,16 @@ prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
 
-import ledshim
-ledshim.set_clear_on_exit()
+
 
 USE_LEDSHIM = False
 USE_SSD1306 = True
 
 if USE_SSD1306:
     import display
+
+if USE_LEDSHIM:
+    import ledbar
 
 try:
     from smbus2 import SMBus
@@ -101,28 +103,8 @@ def display_temp(temperature):
         display.update(temperature, 99)
     # Attempt to indicate temperature on ledshim 
     if USE_LEDSHIM:
-        v = temperature % 10
-        (r, g, b) = (255, 255, 255)
-        if temperature < 0:
-            (r, g, b) = (0, 0, 255)
-        elif temperature < 10:
-            (r, g, b) = (0, 255, 0)
-        elif temperature < 20:
-            (r, g, b) = (0, 255, 255)
-        elif temperature > 20:
-            (r, g, b) = (255, 255, 0)
+        ledbar.update(temperature)
 
-        try:
-            for x in range(ledshim.NUM_PIXELS):
-                if x > v:
-                    r, g, b = 0, 0, 0
-                else:
-                    r, g, b = [int(min(v, 1.0) * c) for c in [r, g, b]]
-
-                ledshim.set_pixel(x, r, g, b)
-                ledshim.show()
-        except Exception:
-            print("Failed to display on ledshim")
 
 
 def write_w1_output(temperature, id):
@@ -154,17 +136,20 @@ def read_temperature():
         while True:
             summary = ""
             for sensor in W1ThermSensor.get_available_sensors():
-                temperature = sensor.get_temperature()
-                logger.debug("Sensor %s has temperature %.2f" % (sensor.id, temperature))
-                if temperature-55 and temperature < 125:
-                    temperature_gauge.labels(sensor=sensor.id).set(temperature)
-                    graphite.stage(sensor.id, temperature)
-                    summary += " {}: {} ".format(sensor.id, temperature)
-                    a.store('weather.air-temperature', temperature)
-                    write_w1_output(temperature, sensor.id)
-                    display_temp(temperature)
-                else:
-                    logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
+                try:
+                    temperature = sensor.get_temperature()
+                    logger.debug("Sensor %s has temperature %.2f" % (sensor.id, temperature))
+                    if temperature-55 and temperature < 125:
+                        temperature_gauge.labels(sensor=sensor.id).set(temperature)
+                        graphite.stage(sensor.id, temperature)
+                        summary += " {}: {} ".format(sensor.id, temperature)
+                        a.store('weather.air-temperature', temperature)
+                        write_w1_output(temperature, sensor.id)
+                        display_temp(temperature)
+                    else:
+                        logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
+                except W1ThermSensor.errors.ResetValueError:
+                    logger.warning("Sensor {} is reporting the reset value of 85")
             if summary != "":
                 logger.info("W1: " + summary)
     except KeyboardInterrupt:
