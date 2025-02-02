@@ -23,7 +23,7 @@ prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
 
 USE_LEDSHIM = False
-USE_SSD1306 = True
+USE_SSD1306 = False
 
 if USE_SSD1306:
     import display
@@ -107,14 +107,10 @@ def display_temp(temperature):
 
 
 
-def write_w1_output(temperature, id):
+def write_w1_output(temperature_json):
     """ write w1 output to file """
-    with open("/data/w1_{}.json".format(id), 'w', encoding='utf-8') as outfile:
-        json.dump({
-            "sample_time": time.time(),
-            "temperature": temperature,
-            "id": id,
-        }, outfile)
+    with open("/data/w1.json".format(id), 'w', encoding='utf-8') as outfile:
+        json.dump(temperature_json, outfile)
 
 
 def write_bme280_output(output_file, temperature, humidity, pressure):
@@ -135,6 +131,9 @@ def read_temperature():
     try:
         while True:
             summary = ""
+            temperature_json = {}
+            temperature_json['max'] = 0
+            temperature_json['min'] = 0
             for sensor in W1ThermSensor.get_available_sensors():
                 try:
                     temperature = sensor.get_temperature()
@@ -144,12 +143,21 @@ def read_temperature():
                         graphite.stage(sensor.id, temperature)
                         summary += " {}: {} ".format(sensor.id, temperature)
                         a.store('weather.air-temperature', temperature)
-                        write_w1_output(temperature, sensor.id)
+                        temperature_json[sensor.id] = {
+                            "sample_time": time.time(),
+                            "temperature": temperature
+                        }
+                        if temperature > temperature_json['max']:
+                            temperature_json['max'] = temperature
+                        if temperature > temperature_json['min']:
+                            temperature_json['min'] = temperature
                         display_temp(temperature)
                     else:
                         logger.info("{} outside of range (-55 - 125): {}".format(sensor.id, temperature))
                 except Exception as e:
                     logger.warning(e)
+            logger.debug(temperature_json)
+            write_w1_output(temperature_json)
             if summary != "":
                 logger.info("W1: " + summary)
     except KeyboardInterrupt:

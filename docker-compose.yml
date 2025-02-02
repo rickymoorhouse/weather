@@ -19,3 +19,10 @@ services:
       - "/dev/i2c-1:/dev/i2c-1"
     volumes:
     - output:/data:rw
+  display:
+    build: ./display
+    privileged: true
+    devices:
+      - "/dev/i2c-1:/dev/i2c-1"
+    volumes:
+    - output:/data:r

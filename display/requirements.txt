@@ -1,0 +1,9 @@
+w1thermsensor
+requests
+RPi.GPIO
+pigpio
+gpiozero
+smbus2
+pimoroni-bme280
+prometheus_client
+adafruit_circuitpython_displayio_ssd1306
