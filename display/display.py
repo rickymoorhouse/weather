@@ -47,7 +47,8 @@ fontToUse = bitmap_font.load_font(fontFile)
 
 def update_temp(temp):
     # Make the display context
-    ledbar.update(temp)
+    if USE_LEDSHIM:
+        ledbar.update(temp)
     logger.info("Updating temperature display to %f", temp)
     splash = displayio.Group()
     display.root_group = splash
